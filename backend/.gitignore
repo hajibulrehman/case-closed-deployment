@@ -1,0 +1,25 @@
+node_modules
+
+# Environment variables — never commit real secrets
+.env
+# .env.example is intentionally committed (no real secrets)
+
+# SQLite database files (local dev only — production uses PostgreSQL)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+prisma/*.db
+
+# Uploads (user-generated files — not tracked in git)
+uploads/images/*
+uploads/audio/*
+uploads/video/*
+uploads/documents/*
+# Keep the empty folder structure
+!uploads/images/.gitkeep
+!uploads/audio/.gitkeep
+!uploads/video/.gitkeep
+!uploads/documents/.gitkeep
+
+/generated/prisma

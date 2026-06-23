@@ -1,0 +1,186 @@
+CaseClosed — Complete Project Breakdown
+What Is It?
+A full-stack true crime and fiction web platform where users can browse real criminal cases, read and write fiction stories inspired by them, post suspect theories on unsolved cases, and learn about forensic science and criminal investigation. Admins curate and moderate all content.
+
+Tech Stack
+Layer	Technology
+Frontend	React 18, TypeScript, Tailwind CSS v4, Vite
+Backend	Node.js, Express.js
+Database	SQLite (via Prisma ORM v7)
+Auth	JWT (JSON Web Tokens) + bcrypt
+File uploads	Multer
+Image delivery	Custom proxy endpoint (node-fetch)
+Architecture Overview
+Browser (React + Vite)
+    ↕ HTTP/REST
+Express API (Node.js, port 5000)
+    ↕ Prisma ORM
+SQLite (dev.db file, local)
+    +
+Multer → /uploads folder (images, audio, video, PDF)
+    +
+Image Proxy → /api/imgproxy (fetches Unsplash via backend, solves CORS)
+Everything runs locally. No cloud services, no external databases.
+
+Database (SQLite + Prisma)
+Models (tables):
+User
+
+id, email, username, password (bcrypt hashed), role (user/admin), avatar, bio
+Relations: has many Stories, Theories, Comments, RealCaseRequests
+Case
+
+id, title, category, section, summary, fullContent, location, date, status, featured
+Rich fields: timeline (JSON), keyFacts (JSON), links (JSON), victims, perpetrator, verdict, suspects
+section field separates Real Cases ("cases") from Unsolved Cases ("unsolved")
+Relations: has many CaseMedia, Stories, Comments, Theories
+CaseMedia
+
+id, caseId, type (image/audio/video/document), url, caption
+Each case can have up to 20 media files
+Story
+
+id, title, content, authorId, caseId (optional link to real case), type (fantasy/real), status (pending/published/rejected), genre, tags, coverImage, views
+Fiction stories are published instantly; real-life accounts require admin approval
+Article (Learn section)
+
+id, title, slug, summary, content, category, coverImage, tags, featured, views, relatedCases
+Quiz (Interactive section)
+
+id, title, description, difficulty, questions (JSON array with options and answers), plays
+Theory (Community theories on unsolved cases)
+
+id, caseId, authorId, title, content, votes
+RealCaseRequest (User submissions for Real Cases section)
+
+id, userId, title, content, sources, status (pending/approved/rejected), adminNote
+Comment
+
+id, content, authorId, caseId or storyId, createdAt
+Backend (Express API)
+Routes:
+Endpoint	What it does
+POST /api/auth/register	Create account, returns JWT
+POST /api/auth/login	Login, returns JWT
+GET /api/auth/me	Get current user from token
+PUT /api/auth/profile	Update username/bio
+GET /api/cases	All published cases (supports section, category, search, pagination)
+GET /api/cases/featured	Featured solved cases for homepage
+GET /api/cases/:id	Single case with media, stories, comments
+POST /api/cases	Admin: create case (multipart with media)
+PUT /api/cases/:id	Admin: update case
+DELETE /api/cases/:id	Admin: delete case
+GET /api/stories/fantasy	All published fiction stories
+GET /api/stories/:id	Single story (increments views)
+POST /api/stories	Create story (auto-image if no cover)
+PATCH /api/stories/:id/moderate	Admin: approve/reject with note
+GET /api/articles	Learn articles (category filter)
+GET /api/articles/:slug	Single article
+GET /api/quizzes	All quizzes
+POST /api/quizzes/:id/submit	Submit answers, get score and explanations
+POST /api/theories	Post a theory on a case
+POST /api/theories/:id/vote	Upvote/downvote a theory
+GET /api/requests/mine	User's own submissions
+POST /api/requests	Submit real-life account for review
+PATCH /api/requests/:id	Admin: approve/reject (auto-creates story if approved)
+GET /api/admin/stats	Dashboard stats (counts)
+GET /api/admin/users	All users
+PATCH /api/admin/users/:id/role	Promote/demote to admin
+GET /api/imgproxy	Proxy external images through backend (fixes CORS)
+Middleware:
+authenticate — verifies JWT, attaches user to request
+requireAdmin — blocks non-admin access
+multer — handles multipart file uploads, routes to /uploads/images, /audio, /video, /documents by MIME type
+Auto-image system:
+When a case or story is created without a cover image, the backend automatically assigns one from a curated pool of Unsplash photo IDs, grouped by category/genre. All external image URLs are routed through /api/imgproxy to avoid CORS issues.
+
+Frontend (React + TypeScript)
+Pages and routing:
+Route	Page	Who sees it
+/	Home — featured cases, recent fiction	Everyone
+/cases	Real Cases — 82 solved cases, search + filter	Everyone
+/unsolved	Unsolved Cases — 29 open cases	Everyone
+/cases/:id	Case detail — full info, timeline, evidence links	Everyone
+/stories	Fiction Stories — 25 stories, genre filter	Everyone
+/stories/:id	Story detail — full text, comments	Everyone
+/learn	Learn — 12 educational articles	Everyone
+/learn/:slug	Article detail	Everyone
+/interactive	Interactive — quizzes, theories, coming soon	Everyone
+/interactive/quiz/:id	Quiz with scoring	Everyone
+/login /register	Auth pages	Unauthenticated
+/dashboard	My Stories	Logged-in users
+/dashboard/theories	My Theories	Logged-in users
+/dashboard/requests	Real submissions	Logged-in users
+/dashboard/write	Write a story	Logged-in users
+/dashboard/profile	Profile + stats	Logged-in users
+/admin	Admin overview + stats	Admin only
+/admin/cases	Manage cases	Admin only
+/admin/cases/new	Add real case (4-tab form)	Admin only
+/admin/stories	Moderate stories	Admin only
+/admin/stories/new	Add fiction story	Admin only
+/admin/requests	Review user submissions	Admin only
+/admin/users	Manage users	Admin only
+State management:
+No Redux or Zustand — React useState and useEffect throughout. Auth state lives in AuthContext (React Context API), stored in localStorage. Every API call uses the shared axios instance which automatically attaches the JWT header.
+
+Key components:
+Navbar — 5 nav links + auth, responsive mobile menu
+CaseCard — image, category badge, title, location, date
+StoryCard — cover image, genre badge, author, views, read time
+Authentication & Authorization
+JWT-based. On login/register the server returns a signed token (7 day expiry). The token is stored in localStorage. Every protected request sends Authorization: Bearer <token>. Two roles: user and admin. Admin routes are protected by the requireAdmin middleware server-side — not just hidden in the UI.
+
+Content Sections Explained
+Real Cases (82): Admin-curated, solved cases. Murder, genocide, missing persons, police cases. Each has: summary, full narrative, timeline, key facts, victims, perpetrator, verdict, reference links (Wikipedia, FBI, Netflix docs, etc), and media.
+
+Unsolved Cases (29): Same structure as real cases but section = "unsolved". Zodiac, Black Dahlia, Jack the Ripper, JonBenét, D.B. Cooper, Madeleine McCann, etc. Always show an "UNSOLVED" badge.
+
+Fiction Stories (25): User and admin-written creative stories. Always labeled as fiction. Can be linked to a real case. Genre-tagged. Admin can approve/reject/publish. Users write fiction freely; real-life accounts require approval.
+
+Learn (12 articles): Long-form educational articles written by admin. Categories: Crime Techniques, Investigation, Legal, Evidence, Criminal Profiling, Detective Training. Topics include DNA evidence, interrogation techniques, eyewitness memory, organised crime, how serial killers are caught.
+
+Interactive: Community theories on unsolved cases (users post and vote), quizzes with scoring and explanations, placeholder for "Solve It Yourself" and "Mystery Challenges."
+
+Data Flow Example — Adding a Case
+Admin fills out 4-tab form in /admin/cases/new
+React builds a FormData object with all fields including JSON strings for timeline/keyFacts/links and any uploaded media files
+POST /api/cases — Multer processes files, saves to /uploads/, Prisma creates the Case row, then creates CaseMedia rows. If no files uploaded, auto-assigns a proxied Unsplash image based on category
+Case appears in /cases immediately
+Data Flow Example — User Writes a Fiction Story
+User goes to /dashboard/write, selects Fiction
+Fills title, genre, tags, optional case link, content
+POST /api/stories — creates Story row with status: published, auto-assigns cover image by genre
+Story immediately appears at /stories
+Data Flow Example — User Submits Real-Life Account
+User selects Real Life Account in Write Story form
+Fills structured fields (category, location, victims, perpetrator, key facts, sources)
+POST /api/requests — creates RealCaseRequest with status: pending
+Admin sees it in /admin/requests, reviews, approves or rejects with optional note
+On approval: a Story is automatically created with type: real, status: published
+Key Design Decisions Worth Mentioning
+Why SQLite? Zero setup — the entire database is a single file. Perfect for a portfolio project. Easy to switch to PostgreSQL by changing one line in Prisma config.
+
+Why image proxy? Unsplash CDN blocks requests from localhost due to referrer policy. Rather than getting an API key, the backend fetches images server-side (where there's no referrer issue) and streams them to the browser. This is also how production CDN caching works conceptually.
+
+Why JSON fields for timeline/keyFacts/links? SQLite doesn't have native JSON column type like PostgreSQL. Storing structured data as JSON strings in TEXT columns is a common SQLite pattern. Prisma returns them as strings; the frontend parses with JSON.parse().
+
+Why separate section field instead of a different table for unsolved? Cases share 95% of the same fields. A section flag is simpler and means all case-related logic (media, comments, theories) works identically for both sections.
+
+To Run It
+# Terminal 1 — Backend
+cd backend
+node src/index.js       # or: npm run dev
+
+# Terminal 2 — Frontend
+cd frontend
+npm run dev
+
+# Seeding (first time)
+cd backend
+node src/seed.js        # creates admin + user accounts
+Accounts:
+
+Admin: admin@caseclosed.com / admin123
+User: user@caseclosed.com / user123
+
+

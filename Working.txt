@@ -1,0 +1,25 @@
+CaseClosed is fully scaffolded and running. Here's what you have:
+
+Backend (port 5000)
+
+Express + Prisma 7 + SQLite — zero external database setup needed
+Auth with JWT — register, login, role-based access
+Cases API — full CRUD with media uploads (images, audio, video, PDF up to 100MB)
+Stories API — fantasy stories publish instantly; real-life accounts go through admin review
+Requests API — users submit real-life story requests; admin approve/reject, which auto-publishes
+Admin API — stats, user management, role toggling
+Frontend (port 5173)
+
+Dark true-crime theme (charcoal + red)
+Real Cases section — filtered by category (murder, suicide, missing, genocide, police, other), with media gallery
+Fiction Stories section — genre-filtered, user-written, clearly labeled as fictional
+User Dashboard — write stories, submit real requests, track status
+Admin Dashboard — add cases with media, moderate stories with notes, handle requests, manage users
+To run:
+
+# Terminal 1
+cd backend && npm run dev
+
+# Terminal 2
+cd frontend && npm run dev
+Default logins: admin@caseclosed.com / admin123 and user@caseclosed.com / user123

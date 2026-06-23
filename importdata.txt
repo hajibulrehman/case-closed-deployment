@@ -1,0 +1,25 @@
+50 new cases imported across 4 categories. Go to http://localhost:5173/cases to see them all.
+
+For real Kaggle data, here's exactly what to do:
+
+Go to kaggle.com/datasets and search for any of these — all free to download:
+
+serial killers dataset → download serial_killers.csv
+homicide reports → the FBI/CDC dataset has 600k+ rows
+missing persons → NamUs exports
+mass shootings → Mother Jones dataset
+Drop the CSV into backend/data/
+
+Run:
+
+cd backend
+node src/import-csv.js data/your-file.csv [category]
+Or preview first with --dry-run:
+
+node src/import-csv.js data/your-file.csv murder --dry-run
+Optional flags:
+
+--limit=500 — only import first 500 rows
+--featured — mark first 10 as featured on homepage
+--skip=1 — skip a row if CSV has a secondary header
+The importer auto-detects column names across all the major Kaggle dataset formats, so it should handle most CSVs without any configuration.

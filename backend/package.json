@@ -1,0 +1,50 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "build": "npx prisma generate && npx prisma migrate deploy",
+    "seed": "node src/seed.js",
+    "import": "node src/import-csv.js",
+    "import:killers": "node src/import-csv.js data/serial_killers_sample.csv murder",
+    "import:missing": "node src/import-csv.js data/missing_persons_sample.csv missing",
+    "import:genocide": "node src/import-csv.js data/genocides_sample.csv genocide",
+    "import:trials": "node src/import-csv.js data/famous_trials_sample.csv police",
+    "import:all": "node src/import-csv.js data/serial_killers_sample.csv murder && node src/import-csv.js data/missing_persons_sample.csv missing && node src/import-csv.js data/genocides_sample.csv genocide && node src/import-csv.js data/famous_trials_sample.csv police",
+    "backfill:images": "node src/backfill-images.js",
+    "enrich": "node src/enrich-cases.js",
+    "enrich:all": "node src/enrich-all.js",
+    "seed:stories": "node src/seed-stories.js",
+    "backfill:story-images": "node src/backfill-story-images.js",
+    "proxy:images": "node src/proxy-images.js",
+    "fix:images": "node src/fix-broken-images.js",
+    "seed:learn": "node src/seed-learn.js",
+    "seed:learn:more": "node src/seed-more-articles.js",
+    "seed:stories:more": "node src/seed-more-stories.js",
+    "seed:unsolved": "node src/seed-unsolved.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "csv-parse": "^7.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.13.3",
+    "prisma": "^7.8.0",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

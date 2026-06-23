@@ -1,0 +1,25 @@
+Murder / Serial Killers
+The Charley Project — massive database of unsolved murders and missing persons
+Murder Accountability Project — FBI homicide data, downloadable CSVs
+Wikipedia: List of serial killers — structured, well-cited entries you can copy directly into your admin panel
+Crime Museum — detailed write-ups on famous cases (Bundy, Dahmer, BTK, Gacy, etc.)
+Missing Persons
+NamUs (National Missing and Unidentified Persons System) — US government database, searchable and free
+NCMEC (National Center for Missing & Exploited Children) — child cases specifically
+Doe Network — international unidentified remains database
+Genocide / Mass Atrocities
+Genocide Watch — country-by-country reports
+United States Holocaust Memorial Museum — Holocaust and modern genocides
+Srebrenica Memorial — detailed Bosnia genocide records
+Khmer Rouge Tribunal documents — Cambodia genocide court records, public
+Police / Court Cases
+CourtListener (Free Law Project) — millions of US court opinions, free API
+PACER — US federal court records (small per-page fee)
+The Marshall Project — investigative criminal justice journalism with data
+True Crime Compilations
+Murderpedia — encyclopedia of murderers, very structured, easy to copy
+Crime + Investigation — UK-focused case files
+All That's Interesting — True Crime — well-written summaries with sources
+Structured / Scrapable Data
+FBI Crime Data Explorer — official US crime stats, bulk download
+Kaggle True Crime Datasets — search "serial killers", "homicide reports", "missing persons" — many free CSVs
