@@ -23,4 +23,3 @@ uploads/documents/*
 !uploads/documents/.gitkeep
 
 /generated/prisma
-src/generated/
