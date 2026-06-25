@@ -5,14 +5,12 @@ databases:
     user: caseclosed
 
 services:
-  # Single web service — Express serves both the API and the React frontend
   - type: web
     name: case-closed-app
     runtime: node
-    rootDir: backend
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: node backend/src/index.js
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
