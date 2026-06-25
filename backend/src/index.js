@@ -14,23 +14,42 @@ const theoryRoutes  = require('./routes/theories');
 
 const app = express();
 
+// ── CORS ─────────────────────────────────────────────────────────────────────
+// In production the frontend is served from the same origin, so same-origin
+// requests have no Origin header and pass through automatically.
+// Only needed for local dev (frontend on :5173, backend on :5000).
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
   : ['http://localhost:5173'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // No origin = same-origin request or non-browser client — always allow
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    // In production, same-origin requests won't have a cross-origin header,
+    // so if we see the app's own domain just allow it
+    if (process.env.RENDER_EXTERNAL_URL && origin === process.env.RENDER_EXTERNAL_URL) {
+      return callback(null, true);
+    }
     callback(new Error(`CORS: origin ${origin} not allowed`));
   },
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ── Static uploads ────────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// ── Serve React frontend build (BEFORE API routes so assets resolve first) ───
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDist));
+}
+
+// ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/stories', storyRoutes);
@@ -40,12 +59,11 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/theories', theoryRoutes);
 
-// ── Image proxy — serves external images through our domain ──────────────────
+// ── Image proxy ───────────────────────────────────────────────────────────────
 const fetch = require('node-fetch');
 app.get('/api/imgproxy', async (req, res) => {
   const { url } = req.query;
   if (!url || typeof url !== 'string') return res.status(400).send('Missing url');
-  // Only allow known CDN domains
   const allowed = ['images.unsplash.com', 'picsum.photos', 'fastly.picsum.photos'];
   try {
     const parsed = new URL(url);
@@ -66,11 +84,10 @@ app.get('/api/imgproxy', async (req, res) => {
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// ── Serve React frontend in production ───────────────────────────────────────
+// ── React catch-all (AFTER all API routes) ────────────────────────────────────
+// Sends unknown paths to index.html so React Router handles client-side navigation
 if (process.env.NODE_ENV === 'production') {
   const frontendDist = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendDist));
-  // All non-API routes go to React's index.html (client-side routing)
   app.get('/{*splat}', (req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
