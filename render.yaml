@@ -13,7 +13,17 @@ services:
       cd frontend && npm install && npm run build &&
       cd ../backend && npm install &&
       npx prisma generate &&
-      npx prisma migrate deploy
+      npx prisma migrate deploy &&
+      node src/seed.js || true &&
+      node src/import-csv.js data/serial_killers_sample.csv murder || true &&
+      node src/import-csv.js data/missing_persons_sample.csv missing || true &&
+      node src/import-csv.js data/genocides_sample.csv genocide || true &&
+      node src/import-csv.js data/famous_trials_sample.csv police || true &&
+      node src/seed-stories.js || true &&
+      node src/seed-learn.js || true &&
+      node src/seed-more-articles.js || true &&
+      node src/seed-more-stories.js || true &&
+      node src/seed-unsolved.js || true
     startCommand: node backend/src/index.js
     healthCheckPath: /api/health
     envVars:

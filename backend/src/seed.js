@@ -2,8 +2,6 @@ require('dotenv').config();
 const prisma = require('./utils/prisma');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
-
 async function main() {
   // Create admin
   const adminPass = await bcrypt.hash('admin123', 10);
