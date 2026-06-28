@@ -126,18 +126,106 @@ function buildSummary(row, headers, summaryCol, category) {
 
 function buildFullContent(row, headers, usedCols) {
   const skipCols = new Set([...usedCols, 'id', 'index', 'unnamed: 0', '']);
-  const lines = [];
 
+  // ── Famous trials format ──────────────────────────────────────────────────
+  // Columns: case_title, location, date, defendant, charges, verdict, notes
+  if (headers.includes('defendant') && headers.includes('charges') && headers.includes('verdict')) {
+    const parts = [];
+    const defendant = getVal(row, 'defendant');
+    const charges   = getVal(row, 'charges');
+    const verdict   = getVal(row, 'verdict');
+    const notes     = getVal(row, 'notes');
+    const location  = getVal(row, 'location');
+    const date      = getVal(row, 'date');
+
+    if (defendant) parts.push(`DEFENDANT\n${defendant}`);
+    if (charges)   parts.push(`CHARGES\n${charges}`);
+    if (location)  parts.push(`JURISDICTION\n${location}`);
+    if (date)      parts.push(`PERIOD\n${date}`);
+    if (verdict)   parts.push(`VERDICT & OUTCOME\n${verdict}`);
+    if (notes)     parts.push(`CASE DETAILS\n${notes}`);
+    if (parts.length > 0) return parts.join('\n\n');
+  }
+
+  // ── Serial killers format ─────────────────────────────────────────────────
+  // Columns: name, proven_victims, possible_victims, country, years_active, method, status, notes
+  if (headers.includes('proven_victims') && headers.includes('years_active')) {
+    const parts = [];
+    const proven    = getVal(row, 'proven_victims');
+    const possible  = getVal(row, 'possible_victims');
+    const country   = getVal(row, 'country');
+    const years     = getVal(row, 'years_active');
+    const method    = getVal(row, 'method');
+    const status    = getVal(row, 'status');
+    const notes     = getVal(row, 'notes');
+
+    if (proven || possible) {
+      parts.push(`VICTIMS\nConfirmed victims: ${proven || 'Unknown'}${possible && possible !== proven ? `\nEstimated total: ${possible}` : ''}`);
+    }
+    if (country)  parts.push(`COUNTRY OF OPERATION\n${country}`);
+    if (years)    parts.push(`YEARS ACTIVE\n${years}`);
+    if (method)   parts.push(`METHOD\n${method}`);
+    if (status)   parts.push(`LEGAL STATUS\n${status}`);
+    if (notes)    parts.push(`BACKGROUND\n${notes}`);
+    if (parts.length > 0) return parts.join('\n\n');
+  }
+
+  // ── Missing persons format ────────────────────────────────────────────────
+  // Columns: first_name, last_name, date_missing, age, sex, race, last_known_location, circumstances, status
+  if (headers.includes('date_missing') && headers.includes('circumstances')) {
+    const parts = [];
+    const firstName = getVal(row, 'first_name');
+    const lastName  = getVal(row, 'last_name');
+    const age       = getVal(row, 'age');
+    const sex       = getVal(row, 'sex');
+    const race      = getVal(row, 'race');
+    const dateMiss  = getVal(row, 'date_missing');
+    const location  = getVal(row, 'last_known_location');
+    const circs     = getVal(row, 'circumstances');
+    const status    = getVal(row, 'status');
+
+    const name = [firstName, lastName].filter(Boolean).join(' ');
+    const profile = [age ? `Age at disappearance: ${age}` : null, sex, race].filter(Boolean).join(' · ');
+    if (name)     parts.push(`MISSING PERSON\n${name}`);
+    if (profile)  parts.push(`PROFILE\n${profile}`);
+    if (dateMiss) parts.push(`DATE OF DISAPPEARANCE\n${dateMiss}`);
+    if (location) parts.push(`LAST KNOWN LOCATION\n${location}`);
+    if (circs)    parts.push(`CIRCUMSTANCES\n${circs}`);
+    if (status)   parts.push(`CURRENT STATUS\n${status}`);
+    if (parts.length > 0) return parts.join('\n\n');
+  }
+
+  // ── Genocides format ─────────────────────────────────────────────────────
+  // Columns: title, location, date, estimated_deaths, perpetrators, victims, description, outcome
+  if (headers.includes('estimated_deaths') && headers.includes('perpetrators')) {
+    const parts = [];
+    const deaths      = getVal(row, 'estimated_deaths');
+    const perpetrators = getVal(row, 'perpetrators');
+    const victims     = getVal(row, 'victims');
+    const description = getVal(row, 'description');
+    const outcome     = getVal(row, 'outcome');
+    const location    = getVal(row, 'location');
+    const date        = getVal(row, 'date');
+
+    if (deaths)       parts.push(`ESTIMATED DEATH TOLL\n${deaths}`);
+    if (location)     parts.push(`LOCATION\n${location}`);
+    if (date)         parts.push(`PERIOD\n${date}`);
+    if (perpetrators) parts.push(`PERPETRATORS\n${perpetrators}`);
+    if (victims)      parts.push(`TARGETED GROUP(S)\n${victims}`);
+    if (description)  parts.push(`WHAT HAPPENED\n${description}`);
+    if (outcome)      parts.push(`OUTCOME & JUSTICE\n${outcome}`);
+    if (parts.length > 0) return parts.join('\n\n');
+  }
+
+  // ── Generic fallback ──────────────────────────────────────────────────────
+  const lines = [];
   for (const header of headers) {
     if (skipCols.has(header)) continue;
     const val = getVal(row, header);
     if (!val || val === 'Unknown' || val === 'N/A' || val === '0') continue;
-    const label = header
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    const label = header.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     lines.push(`${label}: ${val}`);
   }
-
   return lines.length > 0 ? lines.join('\n') : 'No additional details available.';
 }
 
@@ -291,40 +379,42 @@ Examples:
         continue;
       }
 
-      // Check for duplicate
-      const existing = await prisma.case.findFirst({ where: { title } });
+      // Find existing by title, then upsert so redeploys refresh content
+      const existing = await prisma.case.findFirst({ where: { title }, select: { id: true } });
+
+      const caseFields = {
+        summary:     summary || `A documented ${category} case.`,
+        fullContent: fullContent || summary || 'No details available.',
+        location,
+        date,
+        verdict:     getVal(row, 'verdict') || getVal(row, 'outcome') || getVal(row, 'status') || null,
+        perpetrator: getVal(row, 'defendant') || getVal(row, 'perpetrators') || getVal(row, 'name') || null,
+        victims:     getVal(row, 'victims') || (getVal(row, 'proven_victims') ? `${getVal(row, 'proven_victims')} confirmed victims` : null),
+        suspects:    getVal(row, 'defendant') || getVal(row, 'perpetrators') || null,
+      };
+
+      let savedCase;
       if (existing) {
-        skipped++;
-        continue;
+        savedCase = await prisma.case.update({ where: { id: existing.id }, data: caseFields });
+        skipped++; // count as "updated not newly created"
+      } else {
+        savedCase = await prisma.case.create({
+          data: { title, category, status: 'published', featured: featured && i < 10, ...caseFields }
+        });
+        imported++;
       }
 
-      await prisma.case.create({
-        data: {
-          title,
-          category,
-          summary: summary || `A documented ${category} case.`,
-          fullContent: fullContent || summary || 'No details available.',
-          location,
-          date,
-          featured: featured && i < 10,
-          status: 'published',
-        }
-      });
-
-      // Auto-assign image — use imported count + id for better variety
-      const created = await prisma.case.findFirst({ where: { title }, orderBy: { createdAt: 'desc' } });
-      if (created) {
+      // Add cover image for newly created cases only
+      if (!existing && savedCase) {
         await prisma.caseMedia.create({
           data: {
-            caseId: created.id,
+            caseId: savedCase.id,
             type: 'image',
-            url: getCaseImageUrl(created.id + String(imported), category, title),
+            url: getCaseImageUrl(savedCase.id + String(imported), category, title),
             caption: `Cover image for ${category} case`
           }
         });
       }
-
-      imported++;
 
       // Progress
       if (imported % 50 === 0) {
