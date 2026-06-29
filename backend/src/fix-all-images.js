@@ -1,19 +1,19 @@
 /**
- * Replaces all picsum.photos URLs in CaseMedia with permanent Unsplash URLs.
- * Safe to run multiple times — only updates picsum/fastly URLs.
- * Run: node src/fix-all-images.js
+ * Rebuilds image URLs for every case using permanent Unsplash direct CDN URLs.
+ * Replaces ALL existing image media records unconditionally.
+ * Adds an image to any case that has none.
+ * Safe to run multiple times.
  */
 require('dotenv').config();
 const prisma = require('./utils/prisma');
 const { getCaseImageUrl } = require('./utils/caseImage');
 
 async function main() {
-  // Get all cases with their media
   const cases = await prisma.case.findMany({
     include: { media: { where: { type: 'image' } } },
   });
 
-  console.log(`Found ${cases.length} cases`);
+  console.log(`Processing images for ${cases.length} cases...`);
   let updated = 0;
   let added = 0;
 
@@ -21,22 +21,29 @@ async function main() {
     const newUrl = getCaseImageUrl(c.id, c.category, c.title);
 
     if (c.media.length === 0) {
-      // No image at all — create one
+      // No image — create one
       await prisma.caseMedia.create({
-        data: { caseId: c.id, type: 'image', url: newUrl, caption: `Cover image` }
+        data: { caseId: c.id, type: 'image', url: newUrl, caption: 'Cover image' }
       });
       added++;
     } else {
-      // Update any picsum/fastly URLs to the new permanent Unsplash URL
-      for (const m of c.media) {
-        if (m.url.includes('picsum') || m.url.includes('fastly') || m.url.includes('unsplash.com/photo')) {
-          await prisma.caseMedia.update({
-            where: { id: m.id },
-            data: { url: newUrl }
-          });
-          updated++;
-        }
+      // Replace ALL image records with the correct permanent URL
+      // Delete extras, keep only one
+      const [first, ...extras] = c.media;
+
+      // Delete any duplicate image records
+      if (extras.length > 0) {
+        await prisma.caseMedia.deleteMany({
+          where: { id: { in: extras.map(m => m.id) } }
+        });
       }
+
+      // Update the first one to the new URL
+      await prisma.caseMedia.update({
+        where: { id: first.id },
+        data: { url: newUrl }
+      });
+      updated++;
     }
   }
 
