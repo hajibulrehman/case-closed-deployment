@@ -49,6 +49,12 @@ function Section({ title, icon: Icon, children, defaultOpen = true }: any) {
   );
 }
 
+// Route external image URLs through the backend proxy — fixes Unsplash hotlink blocking
+function proxied(url: string): string {
+  if (!url || url.startsWith('/')) return url;
+  return `/api/imgproxy?url=${encodeURIComponent(url)}`;
+}
+
 export default function CaseDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -85,7 +91,7 @@ export default function CaseDetail() {
   );
   if (!caseData) return <div className="text-center py-16 text-zinc-500">Case not found.</div>;
 
-  const images  = caseData.media?.filter((m: any) => m.type === 'image')    || [];
+  const images  = caseData.media?.filter((m: any) => m.type === 'image').map((m: any) => ({ ...m, url: proxied(m.url) }))    || [];
   const audio   = caseData.media?.filter((m: any) => m.type === 'audio')    || [];
   const video   = caseData.media?.filter((m: any) => m.type === 'video')    || [];
   const catColor = CATEGORY_COLORS[caseData.category] || CATEGORY_COLORS.other;

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Calendar, Tag } from 'lucide-react';
+import { MapPin, Calendar } from 'lucide-react';
 
 interface CaseCardProps {
   id: string;
@@ -12,25 +12,34 @@ interface CaseCardProps {
 }
 
 const categoryColors: Record<string, string> = {
-  murder: 'bg-red-900/80 text-red-300',
-  suicide: 'bg-purple-900/80 text-purple-300',
-  missing: 'bg-blue-900/80 text-blue-300',
+  murder:   'bg-red-900/80 text-red-300',
+  suicide:  'bg-purple-900/80 text-purple-300',
+  missing:  'bg-blue-900/80 text-blue-300',
   genocide: 'bg-orange-900/80 text-orange-300',
-  police: 'bg-zinc-700 text-zinc-300',
-  other: 'bg-teal-900/80 text-teal-300',
+  police:   'bg-zinc-700 text-zinc-300',
+  other:    'bg-teal-900/80 text-teal-300',
 };
+
+/** Route external image URLs through our backend proxy so they always load. */
+function proxied(url: string): string {
+  if (!url) return url;
+  // Already a relative/local URL — serve directly
+  if (url.startsWith('/')) return url;
+  return `/api/imgproxy?url=${encodeURIComponent(url)}`;
+}
 
 export default function CaseCard({ id, title, category, summary, location, date, media }: CaseCardProps) {
   const coverImage = media?.find(m => m.type === 'image');
   const color = categoryColors[category] || categoryColors.other;
+  const imgSrc = coverImage ? proxied(coverImage.url) : null;
 
   return (
     <Link to={`/cases/${id}`} className="card hover:border-red-900 transition-colors group block">
       {/* Image */}
       <div className="relative h-44 bg-zinc-800 overflow-hidden">
-        {coverImage ? (
+        {imgSrc ? (
           <img
-            src={coverImage.url}
+            src={imgSrc}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -50,12 +59,8 @@ export default function CaseCard({ id, title, category, summary, location, date,
         </h3>
         <p className="text-zinc-400 text-sm line-clamp-2 mb-3">{summary}</p>
         <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
-          {location && (
-            <span className="flex items-center gap-1"><MapPin size={11} />{location}</span>
-          )}
-          {date && (
-            <span className="flex items-center gap-1"><Calendar size={11} />{date}</span>
-          )}
+          {location && <span className="flex items-center gap-1"><MapPin size={11} />{location}</span>}
+          {date     && <span className="flex items-center gap-1"><Calendar size={11} />{date}</span>}
         </div>
       </div>
     </Link>

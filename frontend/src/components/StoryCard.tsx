@@ -23,16 +23,24 @@ const genreColors: Record<string, string> = {
   fantasy: 'bg-teal-900/60 text-teal-300',
 };
 
+/** Route external image URLs through our backend proxy so they always load. */
+function proxied(url: string): string {
+  if (!url) return url;
+  if (url.startsWith('/')) return url;
+  return `/api/imgproxy?url=${encodeURIComponent(url)}`;
+}
+
 export default function StoryCard({ id, title, content, author, genre, views, createdAt, coverImage, case: caseRef, type }: StoryCardProps) {
   const color = genre ? (genreColors[genre] || 'bg-zinc-700 text-zinc-400') : '';
+  const imgSrc = coverImage ? proxied(coverImage) : null;
 
   return (
     <Link to={`/stories/${id}`} className="card hover:border-zinc-600 transition-colors group block">
       {/* Cover */}
       <div className="relative h-40 bg-zinc-800 overflow-hidden">
-        {coverImage ? (
+        {imgSrc ? (
           <img
-            src={coverImage}
+            src={imgSrc}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
