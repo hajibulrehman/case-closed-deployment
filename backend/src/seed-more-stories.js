@@ -1,9 +1,8 @@
 require('dotenv').config();
 const prisma = require('./utils/prisma');
 const { getStoryImageUrl } = require('./utils/storyImage');
-const PROXY = 'http://localhost:5000/api/imgproxy?url=';
-const wrap = url => PROXY + encodeURIComponent(url);
 
+// Store the raw Unsplash URL — the frontend proxies it at render time
 const STORIES = [];
 
 STORIES.push({
@@ -628,11 +627,11 @@ async function main() {
       }
     });
 
-    // Assign proxied image
+    // Assign image — store raw URL, frontend proxies it
     const raw = getStoryImageUrl(storyRow.id, s.genre);
     await prisma.story.update({
       where: { id: storyRow.id },
-      data:  { coverImage: wrap(raw) }
+      data:  { coverImage: raw }
     });
 
     added++;

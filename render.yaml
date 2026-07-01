@@ -24,7 +24,8 @@ services:
       node src/seed-more-articles.js || true &&
       node src/seed-more-stories.js || true &&
       node src/seed-unsolved.js || true &&
-      node src/fix-all-images.js || true
+      node src/fix-all-images.js || true &&
+      node src/fix-story-images.js || true
     startCommand: node backend/src/index.js
     healthCheckPath: /api/health
     envVars:

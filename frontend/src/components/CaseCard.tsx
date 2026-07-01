@@ -21,8 +21,8 @@ const categoryColors: Record<string, string> = {
 };
 
 /** Route external image URLs through our backend proxy so they always load. */
-function proxied(url: string): string {
-  if (!url) return url;
+function proxied(url: string | null | undefined): string | null {
+  if (!url) return null;
   // Already a relative/local URL — serve directly
   if (url.startsWith('/')) return url;
   return `/api/imgproxy?url=${encodeURIComponent(url)}`;
@@ -31,7 +31,7 @@ function proxied(url: string): string {
 export default function CaseCard({ id, title, category, summary, location, date, media }: CaseCardProps) {
   const coverImage = media?.find(m => m.type === 'image');
   const color = categoryColors[category] || categoryColors.other;
-  const imgSrc = coverImage ? proxied(coverImage.url) : null;
+  const imgSrc = coverImage?.url ? proxied(coverImage.url) : null;
 
   return (
     <Link to={`/cases/${id}`} className="card hover:border-red-900 transition-colors group block">

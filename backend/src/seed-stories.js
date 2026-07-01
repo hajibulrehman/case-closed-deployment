@@ -4,6 +4,7 @@
  */
 require('dotenv').config();
 const prisma = require('./utils/prisma');
+const { getStoryImageUrl } = require('./utils/storyImage');
 
 const STORIES = [];
 
@@ -1205,7 +1206,7 @@ async function main() {
       if (matchCase) caseId = matchCase.id;
     }
 
-    await prisma.story.create({
+    const created = await prisma.story.create({
       data: {
         title:     story.title,
         content:   story.content,
@@ -1216,6 +1217,7 @@ async function main() {
         genre:     story.genre,
         tags:      story.tags,
         views:     Math.floor(Math.random() * 800) + 50,
+        coverImage: getStoryImageUrl(story.title, story.genre),
       }
     });
 

@@ -71,14 +71,27 @@ app.get('/api/imgproxy', async (req, res) => {
       return res.status(403).send('Domain not allowed');
     }
     const upstream = await fetch(url, {
-      headers: { 'User-Agent': 'CaseClosed/1.0', 'Referer': 'https://unsplash.com/' }
+      follow: 10, // follow up to 10 redirects
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CaseClosed/1.0)',
+        'Referer': 'https://unsplash.com/',
+        'Accept': 'image/webp,image/jpeg,image/*,*/*',
+      }
     });
-    if (!upstream.ok) return res.status(upstream.status).send('Upstream error');
-    res.set('Content-Type', upstream.headers.get('content-type') || 'image/jpeg');
+    if (!upstream.ok) {
+      // Return a transparent 1x1 pixel so broken images don't show alt text
+      const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+      res.set('Content-Type', 'image/gif');
+      return res.send(pixel);
+    }
+    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+    res.set('Content-Type', contentType);
     res.set('Cache-Control', 'public, max-age=86400');
     upstream.body.pipe(res);
   } catch (err) {
-    res.status(500).send('Proxy error');
+    const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    res.set('Content-Type', 'image/gif');
+    res.send(pixel);
   }
 });
 
